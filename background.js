@@ -79,6 +79,17 @@ async function injectPayload(tabId, payload) {
     await chrome.scripting.executeScript({
       target: { tabId },
       func: async (text) => {
+        function scrollEditorIntoView(node) {
+          const anchor =
+            node.closest(".ScrapThread_threadEditorContainer__SdjL0") ||
+            node.closest(".ThreadEditor_container__OX5wt") ||
+            node;
+          anchor.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
+          setTimeout(() => {
+            anchor.scrollIntoView({ behavior: "auto", block: "start", inline: "nearest" });
+          }, 250);
+        }
+
         function setTextareaValue(node, value) {
           const descriptor = Object.getOwnPropertyDescriptor(
             HTMLTextAreaElement.prototype,
@@ -91,9 +102,7 @@ async function injectPayload(tabId, payload) {
           }
           node.dispatchEvent(new InputEvent("input", { bubbles: true }));
           node.dispatchEvent(new Event("change", { bubbles: true }));
-          node.focus();
-          const end = node.value.length;
-          node.setSelectionRange(end, end);
+          scrollEditorIntoView(node);
         }
 
         function setContentEditable(node, value) {
@@ -108,21 +117,14 @@ async function injectPayload(tabId, payload) {
 
           const inserted = document.execCommand("insertText", false, value);
           if (inserted) {
-            node.focus();
+            scrollEditorIntoView(node);
             return;
           }
 
           node.textContent = value;
           node.dispatchEvent(new InputEvent("input", { bubbles: true, data: value }));
           node.dispatchEvent(new Event("change", { bubbles: true }));
-          node.focus();
-          if (selection) {
-            const endRange = document.createRange();
-            endRange.selectNodeContents(node);
-            endRange.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(endRange);
-          }
+          scrollEditorIntoView(node);
         }
 
         function findEditor() {
