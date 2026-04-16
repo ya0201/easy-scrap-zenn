@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Easy Scrap Zenn",
+  "version": "0.1.0",
+  "description": "Open a quick append screen for a target Zenn Scrap from the current page.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting",
+    "clipboardWrite"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "https://zenn.dev/*"
+  ],
+  "action": {
+    "default_title": "Easy Scrap Zenn"
+  },
+  "options_page": "options.html",
+  "commands": {
+    "open_capture_screen": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+L",
+        "mac": "Command+Shift+L"
+      },
+      "description": "Open target Scrap directly with captured page note"
+    }
+  }
+}
