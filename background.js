@@ -1,4 +1,5 @@
 const STORAGE_KEY = "targetScrapUrl";
+const BLOCKED_DOMAINS_KEY = "blockedDomainPatterns";
 
 async function getSelectionText(tabId) {
   if (!tabId) return "";
@@ -26,6 +27,67 @@ function normalizeZennScrapUrl(url) {
     return parsed.toString();
   } catch (error) {
     return "";
+  }
+}
+
+function normalizeDomainPattern(raw) {
+  let value = (raw || "").trim().toLowerCase();
+  if (!value) return "";
+
+  if (value.includes("://")) {
+    try {
+      value = new URL(value).hostname.toLowerCase();
+    } catch (error) {
+      return "";
+    }
+  }
+
+  value = value.split("/")[0].trim();
+  value = value.replace(/^\.+/, "");
+  if (!value) return "";
+  if (!/^[a-z0-9.*-]+$/.test(value)) return "";
+  return value;
+}
+
+function wildcardToRegex(pattern) {
+  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`^${escaped.replace(/\*/g, ".*")}$`, "i");
+}
+
+function findBlockedPattern(url, patterns) {
+  if (!url || !Array.isArray(patterns) || patterns.length === 0) return "";
+
+  let hostname = "";
+  try {
+    hostname = new URL(url).hostname.toLowerCase();
+  } catch (error) {
+    return "";
+  }
+
+  for (const rawPattern of patterns) {
+    const pattern = normalizeDomainPattern(rawPattern);
+    if (!pattern) continue;
+    const regex = wildcardToRegex(pattern);
+    if (regex.test(hostname)) return pattern;
+  }
+
+  return "";
+}
+
+async function showBlockedMessage(tabId, host, pattern) {
+  if (!tabId) return;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: (domain, matchedPattern) => {
+        window.alert(
+          `[Easy Scrap Zenn]\nこのページのドメイン (${domain}) は除外設定に一致したため、Scrap には遷移しません。\n一致パターン: ${matchedPattern}`
+        );
+      },
+      args: [host, pattern]
+    });
+  } catch (error) {
+    // Ignore if message cannot be shown.
   }
 }
 
@@ -171,7 +233,20 @@ async function handleDirectOpen() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url || !tab.id) return;
 
-  const data = await chrome.storage.sync.get([STORAGE_KEY]);
+  const data = await chrome.storage.sync.get([STORAGE_KEY, BLOCKED_DOMAINS_KEY]);
+  const blockedPattern = findBlockedPattern(tab.url, data[BLOCKED_DOMAINS_KEY]);
+  if (blockedPattern) {
+    const host = (() => {
+      try {
+        return new URL(tab.url).hostname;
+      } catch (error) {
+        return tab.url;
+      }
+    })();
+    await showBlockedMessage(tab.id, host, blockedPattern);
+    return;
+  }
+
   const scrapUrl = normalizeZennScrapUrl(data[STORAGE_KEY] || "");
   if (!scrapUrl) {
     await chrome.runtime.openOptionsPage();

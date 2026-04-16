@@ -12,6 +12,13 @@
       <section class="card">
         <label class="label" for="scrapUrl">デフォルト Scrap URL</label>
         <input id="scrapUrl" type="url" placeholder="https://zenn.dev/{user}/scraps/{id}">
+        <label class="label" for="blockedDomains">除外ドメイン（1行1件、`*` ワイルドカード可）</label>
+        <textarea
+          id="blockedDomains"
+          rows="6"
+          placeholder="例&#10;*.example.com&#10;internal.local&#10;news.*.corp.com"
+        ></textarea>
+        <p class="hint">ここに一致したページでは Scrap へ遷移せずメッセージを表示します。</p>
         <button id="save" type="button">保存</button>
         <p id="status" class="hint"></p>
       </section>
@@ -20,7 +27,7 @@
         <h2>ショートカット変更</h2>
         <p>
           <code>chrome://extensions/shortcuts</code> を開き、<strong>Easy Scrap Zenn</strong> の
-          <code>Open Easy Scrap compose screen for the current tab</code> を変更してください。
+          <code>Open target Scrap directly with captured page note</code> を変更してください。
         </p>
       </section>
     </main>
