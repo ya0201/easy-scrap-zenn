@@ -85,9 +85,6 @@ async function injectPayload(tabId, payload) {
             node.closest(".ThreadEditor_container__OX5wt") ||
             node;
           anchor.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
-          setTimeout(() => {
-            anchor.scrollIntoView({ behavior: "auto", block: "start", inline: "nearest" });
-          }, 250);
         }
 
         function setTextareaValue(node, value) {
