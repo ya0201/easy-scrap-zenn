@@ -91,6 +91,9 @@ async function injectPayload(tabId, payload) {
           }
           node.dispatchEvent(new InputEvent("input", { bubbles: true }));
           node.dispatchEvent(new Event("change", { bubbles: true }));
+          node.focus();
+          const end = node.value.length;
+          node.setSelectionRange(end, end);
         }
 
         function setContentEditable(node, value) {
@@ -104,11 +107,22 @@ async function injectPayload(tabId, payload) {
           }
 
           const inserted = document.execCommand("insertText", false, value);
-          if (inserted) return;
+          if (inserted) {
+            node.focus();
+            return;
+          }
 
           node.textContent = value;
           node.dispatchEvent(new InputEvent("input", { bubbles: true, data: value }));
           node.dispatchEvent(new Event("change", { bubbles: true }));
+          node.focus();
+          if (selection) {
+            const endRange = document.createRange();
+            endRange.selectNodeContents(node);
+            endRange.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(endRange);
+          }
         }
 
         function findEditor() {
