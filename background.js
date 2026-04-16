@@ -29,7 +29,7 @@ function normalizeZennScrapUrl(url) {
   }
 }
 
-function buildPayload({ title, url, selectedText, comment }) {
+function buildPayload({ title, url, selectedText }) {
   const lines = [];
   lines.push(`### ${title || "(No title)"}`);
   lines.push(`- URL: ${url || "(No URL)"}`);
@@ -37,15 +37,14 @@ function buildPayload({ title, url, selectedText, comment }) {
 
   if (selectedText) {
     lines.push("");
+    lines.push("### Selected Text");
     lines.push("```text");
     lines.push(selectedText);
     lines.push("```");
   }
 
-  if (comment) {
-    lines.push("");
-    lines.push(comment);
-  }
+  lines.push("");
+  lines.push("");
 
   return lines.join("\n");
 }
@@ -155,22 +154,6 @@ async function injectPayload(tabId, payload) {
   }
 }
 
-async function promptComment(tabId) {
-  if (!tabId) return "";
-  try {
-    const result = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: () => {
-        const value = window.prompt("Scrap に追加するコメント（任意）", "");
-        return value === null ? "" : value.trim();
-      }
-    });
-    return result?.[0]?.result || "";
-  } catch (error) {
-    return "";
-  }
-}
-
 async function handleDirectOpen() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url || !tab.id) return;
@@ -183,12 +166,10 @@ async function handleDirectOpen() {
   }
 
   const selectedText = await getSelectionText(tab.id);
-  const comment = await promptComment(tab.id);
   const payload = buildPayload({
     title: tab.title || "",
     url: tab.url || "",
-    selectedText,
-    comment
+    selectedText
   });
 
   const openedTab = await chrome.tabs.create({ url: scrapUrl });
